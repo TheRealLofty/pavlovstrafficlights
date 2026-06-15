@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Class Traffic Light</title>
+  <style>
+    :root {
+      --green: #2eaf5d;
+      --yellow: #f2c94c;
+      --red: #d94a4a;
+      --bg: #f5f5f5;
+      --text: #222;
+      --card: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      padding: 22px 18px;
+      background: #20242a;
+      color: white;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+    }
+
+    header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 1rem;
+    }
+
+    .controls {
+      max-width: 1100px;
+      margin: 18px auto;
+      padding: 0 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    input {
+      padding: 13px 14px;
+      border: 2px solid #d0d0d0;
+      border-radius: 12px;
+      font-size: 1rem;
+      min-width: min(360px, 100%);
+      background: white;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: #20242a;
+      color: white;
+    }
+
+    button:hover {
+      filter: brightness(1.08);
+    }
+
+    .danger-button {
+      background: #8f1f1f;
+    }
+
+    .traffic-board {
+      max-width: 1150px;
+      margin: 18px auto 28px;
+      padding: 0 14px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .zone {
+      min-height: 520px;
+      border-radius: 28px;
+      padding: 18px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .zone h2 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.6rem, 4vw, 2.5rem);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .zone .hint {
+      text-align: center;
+      margin: 8px 0 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      opacity: 0.75;
+    }
+
+    .green {
+      background: linear-gradient(180deg, #ecfff2, #d8f7e3);
+      border: 8px solid var(--green);
+    }
+
+    .yellow {
+      background: linear-gradient(180deg, #fff9dc, #fff0ad);
+      border: 8px solid var(--yellow);
+    }
+
+    .red {
+      background: linear-gradient(180deg, #ffeaea, #ffd0d0);
+      border: 8px solid var(--red);
+    }
+
+    .drop-area {
+      flex: 1;
+      border-radius: 20px;
+      padding: 10px;
+      border: 3px dashed rgba(0,0,0,0.12);
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .drop-area.drag-over {
+      background: rgba(255,255,255,0.6);
+      border-color: rgba(0,0,0,0.35);
+    }
+
+    .student {
+      background: var(--card);
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 16px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .student[draggable="true"] {
+      cursor: grab;
+    }
+
+    .student[draggable="true"]:active {
+      cursor: grabbing;
+    }
+
+    .student.locked {
+      cursor: not-allowed;
+      border: 3px solid var(--red);
+    }
+
+    .student-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .red-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .crosses {
+      font-size: 1.15rem;
+      min-width: 28px;
+      text-align: right;
+    }
+
+    .small-btn {
+      padding: 7px 10px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      background: #20242a;
+    }
+
+    .plus-cross {
+      background: var(--red);
+    }
+
+    .remove-btn {
+      background: #777;
+    }
+
+    .note {
+      max-width: 1050px;
+      margin: 0 auto 28px;
+      padding: 0 16px;
+      text-align: center;
+      font-size: 0.95rem;
+      color: #444;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      background: #20242a;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 999px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 999;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    @media (max-width: 850px) {
+      .traffic-board {
+        grid-template-columns: 1fr;
+      }
+
+      .zone {
+        min-height: 250px;
+      }
+    }
+
+    @media print {
+      header, .controls, .note, .toast {
+        display: none;
+      }
+
+      body {
+        background: white;
+      }
+
+      .traffic-board {
+        max-width: none;
+        margin: 0;
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .zone {
+        min-height: 90vh;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Class Traffic Light</h1>
+    <p>Green can move to yellow. Yellow can move back to green. Red is locked.</p>
+  </header>
+
+  <section class="controls">
+    <input id="nameInput" type="text" placeholder="Type a student name..." autocomplete="off" />
+    <button id="addBtn">Add Name</button>
+    <button id="sortBtn">Sort Names</button>
+    <button id="resetBtn" class="danger-button">Reset Day</button>
+  </section>
+
+  <main class="traffic-board">
+    <section class="zone green">
+      <h2>Green</h2>
+      <div class="hint">Ready to learn</div>
+      <div class="drop-area" data-zone="green" id="greenList"></div>
+    </section>
+
+    <section class="zone yellow">
+      <h2>Yellow</h2>
+      <div class="hint">Warning / chance to move back up</div>
+      <div class="drop-area" data-zone="yellow" id="yellowList"></div>
+    </section>
+
+    <section class="zone red">
+      <h2>Red</h2>
+      <div class="hint">Locked on red — add crosses here</div>
+      <div class="drop-area" data-zone="red" id="redList"></div>
+    </section>
+  </main>
+
+  <p class="note">
+    This page saves to the browser on this device. Use <strong>Reset Day</strong> to clear crosses and move everyone back to green.
+  </p>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "classTrafficLightBoardV1";
+
+    let students = loadStudents();
+    let draggedId = null;
+
+    const nameInput = document.getElementById("nameInput");
+    const addBtn = document.getElementById("addBtn");
+    const sortBtn = document.getElementById("sortBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const toast = document.getElementById("toast");
+
+    addBtn.addEventListener("click", addStudent);
+    sortBtn.addEventListener("click", sortStudents);
+    resetBtn.addEventListener("click", resetDay);
+
+    nameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") addStudent();
+    });
+
+    document.querySelectorAll(".drop-area").forEach(area => {
+      area.addEventListener("dragover", handleDragOver);
+      area.addEventListener("dragleave", () => area.classList.remove("drag-over"));
+      area.addEventListener("drop", handleDrop);
+    });
+
+    render();
+
+    function loadStudents() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveStudents() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+    }
+
+    function addStudent() {
+      const name = nameInput.value.trim();
+
+      if (!name) {
+        showToast("Type a name first.");
+        return;
+      }
+
+      const duplicate = students.some(student => student.name.toLowerCase() === name.toLowerCase());
+      if (duplicate) {
+        showToast("That name is already on the board.");
+        return;
+      }
+
+      students.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        name,
+        zone: "green",
+        crosses: 0,
+        locked: false
+      });
+
+      nameInput.value = "";
+      saveStudents();
+      render();
+    }
+
+    function sortStudents() {
+      students.sort((a, b) => {
+        const zoneOrder = { green: 1, yellow: 2, red: 3 };
+        return zoneOrder[a.zone] - zoneOrder[b.zone] || a.name.localeCompare(b.name);
+      });
+      saveStudents();
+      render();
+    }
+
+    function resetDay() {
+      const confirmed = confirm("Reset the day? This will move everyone back to green and clear all crosses.");
+      if (!confirmed) return;
+
+      students = students.map(student => ({
+        ...student,
+        zone: "green",
+        crosses: 0,
+        locked: false
+      }));
+
+      saveStudents();
+      render();
+    }
+
+    function render() {
+      document.getElementById("greenList").innerHTML = "";
+      document.getElementById("yellowList").innerHTML = "";
+      document.getElementById("redList").innerHTML = "";
+
+      students.forEach(student => {
+        const card = document.createElement("div");
+        card.className = "student" + (student.locked ? " locked" : "");
+        card.dataset.id = student.id;
+        card.draggable = !student.locked;
+
+        if (!student.locked) {
+          card.addEventListener("dragstart", (event) => {
+            draggedId = student.id;
+            event.dataTransfer.setData("text/plain", student.id);
+          });
+
+          card.addEventListener("dragend", () => {
+            draggedId = null;
+            document.querySelectorAll(".drop-area").forEach(area => area.classList.remove("drag-over"));
+          });
+        }
+
+        const name = document.createElement("span");
+        name.className = "student-name";
+        name.textContent = student.name;
+        card.appendChild(name);
+
+        if (student.zone === "red") {
+          const controls = document.createElement("div");
+          controls.className = "red-controls";
+
+          const crosses = document.createElement("span");
+          crosses.className = "crosses";
+          crosses.textContent = student.crosses > 0 ? "✕".repeat(student.crosses) : "";
+
+          const plus = document.createElement("button");
+          plus.className = "small-btn plus-cross";
+          plus.textContent = "+ Cross";
+          plus.addEventListener("click", () => addCross(student.id));
+
+          const minus = document.createElement("button");
+          minus.className = "small-btn remove-btn";
+          minus.textContent = "−";
+          minus.title = "Remove one cross";
+          minus.addEventListener("click", () => removeCross(student.id));
+
+          controls.appendChild(crosses);
+          controls.appendChild(plus);
+          controls.appendChild(minus);
+          card.appendChild(controls);
+        } else {
+          const remove = document.createElement("button");
+          remove.className = "small-btn remove-btn";
+          remove.textContent = "Remove";
+          remove.addEventListener("click", () => removeStudent(student.id));
+          card.appendChild(remove);
+        }
+
+        document.getElementById(student.zone + "List").appendChild(card);
+      });
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      event.currentTarget.classList.add("drag-over");
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      const targetZone = event.currentTarget.dataset.zone;
+      const id = draggedId || event.dataTransfer.getData("text/plain");
+
+      event.currentTarget.classList.remove("drag-over");
+
+      const student = students.find(item => item.id === id);
+      if (!student) return;
+
+      if (student.locked) {
+        showToast(student.name + " is locked on red.");
+        render();
+        return;
+      }
+
+      if (student.zone === "red") {
+        showToast(student.name + " cannot move off red.");
+        render();
+        return;
+      }
+
+      student.zone = targetZone;
+
+      if (targetZone === "red") {
+        student.locked = true;
+        student.crosses = student.crosses || 0;
+        showToast(student.name + " is now locked on red.");
+      }
+
+      saveStudents();
+      render();
+    }
+
+    function addCross(id) {
+      const student = students.find(item => item.id === id);
+      if (!student) return;
+
+      student.crosses += 1;
+      saveStudents();
+      render();
+    }
+
+    function removeCross(id) {
+      const student = students.find(item => item.id === id);
+      if (!student || student.crosses <= 0) return;
+
+      student.crosses -= 1;
+      saveStudents();
+      render();
+    }
+
+    function removeStudent(id) {
+      students = students.filter(student => student.id !== id);
+      saveStudents();
+      render();
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    }
+  </script>
+</body>
+</html>
