@@ -14,9 +14,7 @@
       --card: #ffffff;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -73,13 +71,16 @@
       color: white;
     }
 
-    button:hover {
-      filter: brightness(1.08);
+    button:hover { filter: brightness(1.08); }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      filter: none;
     }
 
-    .danger-button {
-      background: #8f1f1f;
-    }
+    .danger-button { background: #8f1f1f; }
+    .export-button { background: #285f8f; }
 
     .traffic-board {
       max-width: 1150px;
@@ -157,13 +158,8 @@
       touch-action: none;
     }
 
-    .student[draggable="true"] {
-      cursor: grab;
-    }
-
-    .student[draggable="true"]:active {
-      cursor: grabbing;
-    }
+    .student[draggable="true"] { cursor: grab; }
+    .student[draggable="true"]:active { cursor: grabbing; }
 
     .student.locked {
       cursor: not-allowed;
@@ -184,10 +180,24 @@
       justify-content: flex-end;
     }
 
+    .consequence {
+      font-size: 0.95rem;
+      font-weight: 900;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #ffe6e6;
+      border: 2px solid var(--red);
+      color: #8f1f1f;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
     .crosses {
       font-size: 1.15rem;
       min-width: 28px;
       text-align: right;
+      color: #8f1f1f;
+      font-weight: 900;
     }
 
     .small-btn {
@@ -197,13 +207,8 @@
       background: #20242a;
     }
 
-    .plus-cross {
-      background: var(--red);
-    }
-
-    .remove-btn {
-      background: #777;
-    }
+    .plus-cross { background: var(--red); }
+    .remove-btn { background: #777; }
 
     .note {
       max-width: 1050px;
@@ -231,35 +236,21 @@
       text-align: center;
     }
 
-    .toast.show {
-      opacity: 1;
-    }
+    .toast.show { opacity: 1; }
 
     @media (max-width: 850px) {
-      .traffic-board {
-        grid-template-columns: 1fr;
-      }
-
-      .zone {
-        min-height: 250px;
-      }
+      .traffic-board { grid-template-columns: 1fr; }
+      .zone { min-height: 250px; }
     }
 
     @media print {
-      header, .controls, .note, .toast {
-        display: none;
-      }
-
-      body {
-        background: white;
-      }
-
+      header, .controls, .note, .toast { display: none; }
+      body { background: white; }
       .traffic-board {
         max-width: none;
         margin: 0;
         grid-template-columns: repeat(3, 1fr);
       }
-
       .zone {
         min-height: 90vh;
         box-shadow: none;
@@ -270,13 +261,14 @@
 <body>
   <header>
     <h1>Class Traffic Light</h1>
-    <p>Green can move to yellow. Yellow can move back to green. Red is locked.</p>
+    <p>Green can move to yellow. Yellow can move back to green. Red is locked, with Buddy Class and R &amp; R as the final steps.</p>
   </header>
 
   <section class="controls">
     <input id="nameInput" type="text" placeholder="Type a student name..." autocomplete="off" />
     <button id="addBtn">Add Name</button>
     <button id="sortBtn">Sort Names</button>
+    <button id="exportBtn" class="export-button">Export CSV</button>
     <button id="resetBtn" class="danger-button">Reset Day</button>
   </section>
 
@@ -295,19 +287,21 @@
 
     <section class="zone red">
       <h2>Red</h2>
-      <div class="hint">Locked on red — add crosses here</div>
+      <div class="hint">Locked on red — max: Buddy Class, then R &amp; R</div>
       <div class="drop-area" data-zone="red" id="redList"></div>
     </section>
   </main>
 
   <p class="note">
-    This page saves to the browser on this device. Use <strong>Reset Day</strong> to clear crosses and move everyone back to green.
+    This page saves to the browser on this device. Use <strong>Export CSV</strong> to download today’s record. Use <strong>Reset Day</strong> to clear consequences and move everyone back to green.
   </p>
 
   <div id="toast" class="toast"></div>
 
   <script>
-    const STORAGE_KEY = "classTrafficLightBoardV1";
+    const STORAGE_KEY = "classTrafficLightBoardV2";
+    const OLD_STORAGE_KEY = "classTrafficLightBoardV1";
+    const MAX_CROSSES = 2;
 
     let students = loadStudents();
     let draggedId = null;
@@ -315,11 +309,13 @@
     const nameInput = document.getElementById("nameInput");
     const addBtn = document.getElementById("addBtn");
     const sortBtn = document.getElementById("sortBtn");
+    const exportBtn = document.getElementById("exportBtn");
     const resetBtn = document.getElementById("resetBtn");
     const toast = document.getElementById("toast");
 
     addBtn.addEventListener("click", addStudent);
     sortBtn.addEventListener("click", sortStudents);
+    exportBtn.addEventListener("click", exportCsv);
     resetBtn.addEventListener("click", resetDay);
 
     nameInput.addEventListener("keydown", (event) => {
@@ -336,7 +332,16 @@
 
     function loadStudents() {
       try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(OLD_STORAGE_KEY);
+        const parsed = JSON.parse(saved) || [];
+
+        return parsed.map(student => ({
+          id: student.id,
+          name: student.name,
+          zone: student.zone || "green",
+          crosses: Math.min(Number(student.crosses) || 0, MAX_CROSSES),
+          locked: student.zone === "red" ? true : Boolean(student.locked)
+        }));
       } catch {
         return [];
       }
@@ -383,7 +388,7 @@
     }
 
     function resetDay() {
-      const confirmed = confirm("Reset the day? This will move everyone back to green and clear all crosses.");
+      const confirmed = confirm("Reset the day? This will move everyone back to green and clear Buddy Class / R & R.");
       if (!confirmed) return;
 
       students = students.map(student => ({
@@ -429,21 +434,28 @@
           const controls = document.createElement("div");
           controls.className = "red-controls";
 
+          const consequence = document.createElement("span");
+          consequence.className = "consequence";
+          consequence.textContent = getConsequenceText(student.crosses);
+
           const crosses = document.createElement("span");
           crosses.className = "crosses";
           crosses.textContent = student.crosses > 0 ? "✕".repeat(student.crosses) : "";
 
           const plus = document.createElement("button");
           plus.className = "small-btn plus-cross";
-          plus.textContent = "+ Cross";
+          plus.textContent = getNextConsequenceButtonText(student.crosses);
+          plus.disabled = student.crosses >= MAX_CROSSES;
           plus.addEventListener("click", () => addCross(student.id));
 
           const minus = document.createElement("button");
           minus.className = "small-btn remove-btn";
           minus.textContent = "−";
-          minus.title = "Remove one cross";
+          minus.title = "Remove one consequence step";
+          minus.disabled = student.crosses <= 0;
           minus.addEventListener("click", () => removeCross(student.id));
 
+          controls.appendChild(consequence);
           controls.appendChild(crosses);
           controls.appendChild(plus);
           controls.appendChild(minus);
@@ -458,6 +470,18 @@
 
         document.getElementById(student.zone + "List").appendChild(card);
       });
+    }
+
+    function getConsequenceText(crosses) {
+      if (crosses >= 2) return "R & R";
+      if (crosses === 1) return "Buddy Class";
+      return "On Red";
+    }
+
+    function getNextConsequenceButtonText(crosses) {
+      if (crosses >= 2) return "Max";
+      if (crosses === 1) return "R & R";
+      return "Buddy Class";
     }
 
     function handleDragOver(event) {
@@ -491,7 +515,7 @@
 
       if (targetZone === "red") {
         student.locked = true;
-        student.crosses = student.crosses || 0;
+        student.crosses = Math.min(student.crosses || 0, MAX_CROSSES);
         showToast(student.name + " is now locked on red.");
       }
 
@@ -503,7 +527,16 @@
       const student = students.find(item => item.id === id);
       if (!student) return;
 
+      if (student.crosses >= MAX_CROSSES) {
+        student.crosses = MAX_CROSSES;
+        showToast(student.name + " is already at R & R.");
+        saveStudents();
+        render();
+        return;
+      }
+
       student.crosses += 1;
+      showToast(student.name + ": " + getConsequenceText(student.crosses));
       saveStudents();
       render();
     }
@@ -521,6 +554,64 @@
       students = students.filter(student => student.id !== id);
       saveStudents();
       render();
+    }
+
+    function exportCsv() {
+      if (students.length === 0) {
+        showToast("There are no students to export yet.");
+        return;
+      }
+
+      const now = new Date();
+      const displayDate = now.toLocaleDateString();
+      const displayTime = now.toLocaleTimeString();
+      const fileDate = formatDateForFile(now);
+
+      const rows = [
+        ["Export Date", "Export Time", "Student Name", "Ended On", "Crosses", "Consequence"]
+      ];
+
+      students.forEach(student => {
+        rows.push([
+          displayDate,
+          displayTime,
+          student.name,
+          capitalise(student.zone),
+          student.zone === "red" ? String(student.crosses) : "0",
+          student.zone === "red" ? getConsequenceText(student.crosses) : ""
+        ]);
+      });
+
+      const csvContent = rows.map(row => row.map(escapeCsv).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "traffic-light-export-" + fileDate + ".csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+      showToast("Export downloaded.");
+    }
+
+    function formatDateForFile(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return year + "-" + month + "-" + day;
+    }
+
+    function escapeCsv(value) {
+      const stringValue = String(value ?? "");
+      return '"' + stringValue.replaceAll('"', '""') + '"';
+    }
+
+    function capitalise(value) {
+      if (!value) return "";
+      return value.charAt(0).toUpperCase() + value.slice(1);
     }
 
     function showToast(message) {
