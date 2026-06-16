@@ -51,13 +51,16 @@
       justify-content: center;
     }
 
-    input {
+    textarea {
       padding: 13px 14px;
       border: 2px solid #d0d0d0;
       border-radius: 12px;
       font-size: 1rem;
-      min-width: min(360px, 100%);
+      min-width: min(520px, 100%);
+      min-height: 78px;
+      resize: vertical;
       background: white;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     button {
@@ -335,8 +338,8 @@
   </header>
 
   <section class="controls">
-    <input id="nameInput" type="text" placeholder="Type a student name..." autocomplete="off" />
-    <button id="addBtn">Add Name</button>
+    <textarea id="nameInput" placeholder="Type or paste student names here&#10;One name per line"></textarea>
+    <button id="addBtn">Add Name(s)</button>
     <button id="sortBtn">Sort Names</button>
     <button id="exportExcelBtn" class="export-button">Export Excel</button>
     <button id="exportCsvBtn" class="export-button">Export CSV</button>
@@ -373,7 +376,7 @@
   </main>
 
   <p class="note">
-    This page saves to the browser on this device. Use <strong>Export Excel</strong> for coloured cells, or <strong>Export CSV</strong> for a plain text version. Use <strong>Reset Day</strong> to clear consequences and move everyone back to green.
+    This page saves to the browser on this device. Paste one name per line to add a whole class at once. Press <strong>Ctrl/Command + Enter</strong> to add from the box quickly. Use <strong>Export Excel</strong> for coloured cells, or <strong>Export CSV</strong> for a plain text version. Use <strong>Reset Day</strong> to clear consequences and move everyone back to green.
   </p>
 
   <div id="toast" class="toast"></div>
@@ -401,7 +404,10 @@
     resetBtn.addEventListener("click", resetDay);
 
     nameInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") addStudent();
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        addStudent();
+      }
     });
 
     document.querySelectorAll(".drop-area").forEach(area => {
@@ -434,30 +440,58 @@
     }
 
     function addStudent() {
-      const name = nameInput.value.trim();
+      const rawText = nameInput.value.trim();
 
-      if (!name) {
-        showToast("Type a name first.");
+      if (!rawText) {
+        showToast("Type or paste at least one name first.");
         return;
       }
 
-      const duplicate = students.some(student => student.name.toLowerCase() === name.toLowerCase());
-      if (duplicate) {
-        showToast("That name is already on the board.");
+      const names = rawText
+        .split(/\r?\n/)
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
+
+      if (names.length === 0) {
+        showToast("Type or paste at least one name first.");
         return;
       }
 
-      students.push({
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
-        name,
-        zone: "green",
-        crosses: 0,
-        locked: false
+      let addedCount = 0;
+      let skippedCount = 0;
+      const existingNames = new Set(students.map(student => student.name.toLowerCase()));
+
+      names.forEach(name => {
+        const nameKey = name.toLowerCase();
+
+        if (existingNames.has(nameKey)) {
+          skippedCount += 1;
+          return;
+        }
+
+        students.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+          name,
+          zone: "green",
+          crosses: 0,
+          locked: false
+        });
+
+        existingNames.add(nameKey);
+        addedCount += 1;
       });
 
       nameInput.value = "";
       saveStudents();
       render();
+
+      if (addedCount > 0 && skippedCount > 0) {
+        showToast("Added " + addedCount + " name(s). Skipped " + skippedCount + " duplicate(s).");
+      } else if (addedCount > 0) {
+        showToast("Added " + addedCount + " name(s).");
+      } else {
+        showToast("No new names added. They were already on the board.");
+      }
     }
 
     function sortStudents() {
