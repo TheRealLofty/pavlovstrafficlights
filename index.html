@@ -42,7 +42,7 @@
     }
 
     .controls {
-      max-width: 900px;
+      max-width: 1400px;
       margin: 18px auto;
       padding: 0 14px;
       display: flex;
@@ -83,18 +83,19 @@
     .export-button { background: #285f8f; }
 
     .traffic-board {
-      max-width: 760px;
-      margin: 18px auto 28px;
-      padding: 0 14px;
+      width: min(1500px, calc(100vw - 20px));
+      max-width: none;
+      margin: 12px auto 20px;
+      padding: 0 10px;
       display: grid;
       grid-template-columns: 1fr;
-      gap: 18px;
+      gap: 12px;
     }
 
     .zone {
-      min-height: 230px;
-      border-radius: 28px;
-      padding: 18px;
+      min-height: 175px;
+      border-radius: 24px;
+      padding: 12px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.08);
       display: flex;
       flex-direction: column;
@@ -105,8 +106,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      font-size: clamp(1.6rem, 4vw, 2.5rem);
+      gap: 10px;
+      font-size: clamp(1.35rem, 3vw, 2.1rem);
       letter-spacing: 1px;
       text-transform: uppercase;
       text-align: center;
@@ -130,8 +131,8 @@
 
     .zone .hint {
       text-align: center;
-      margin: 8px 0 16px;
-      font-size: 0.95rem;
+      margin: 5px 0 9px;
+      font-size: 0.9rem;
       font-weight: 700;
       opacity: 0.75;
     }
@@ -153,10 +154,14 @@
 
     .drop-area {
       flex: 1;
-      border-radius: 20px;
-      padding: 10px;
+      border-radius: 18px;
+      padding: 8px;
       border: 3px dashed rgba(0,0,0,0.12);
       transition: background 0.15s, border-color 0.15s;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      align-content: start;
+      gap: 8px;
     }
 
     .drop-area.drag-over {
@@ -166,14 +171,15 @@
 
     .student {
       background: var(--card);
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 16px;
+      padding: 8px 9px;
+      margin: 0;
+      border-radius: 14px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.12);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 6px;
+      min-height: 44px;
       user-select: none;
       touch-action: none;
     }
@@ -187,23 +193,24 @@
     }
 
     .student-name {
-      font-size: 1.2rem;
+      font-size: clamp(0.95rem, 1.4vw, 1.15rem);
       font-weight: 800;
       overflow-wrap: anywhere;
+      line-height: 1.1;
     }
 
     .red-controls {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: wrap;
       justify-content: flex-end;
     }
 
     .consequence {
-      font-size: 0.95rem;
+      font-size: 0.75rem;
       font-weight: 900;
-      padding: 6px 9px;
+      padding: 4px 7px;
       border-radius: 999px;
       background: #ffe6e6;
       border: 2px solid var(--red);
@@ -221,9 +228,9 @@
     }
 
     .small-btn {
-      padding: 7px 10px;
-      border-radius: 10px;
-      font-size: 0.88rem;
+      padding: 5px 7px;
+      border-radius: 9px;
+      font-size: 0.75rem;
       background: #20242a;
     }
 
@@ -231,7 +238,7 @@
     .remove-btn { background: #777; }
 
     .note {
-      max-width: 850px;
+      max-width: 1400px;
       margin: 0 auto 28px;
       padding: 0 16px;
       text-align: center;
@@ -258,7 +265,44 @@
 
     .toast.show { opacity: 1; }
 
+
+    @media (min-width: 1000px) {
+      header {
+        padding: 14px 18px;
+      }
+
+      header h1 {
+        font-size: 2rem;
+      }
+
+      .controls {
+        margin: 10px auto;
+      }
+
+      .traffic-board {
+        grid-template-rows: repeat(3, minmax(175px, auto));
+      }
+
+      .drop-area {
+        grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+      }
+    }
+
+    @media (min-width: 1300px) {
+      .drop-area {
+        grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+      }
+
+      .zone {
+        min-height: 165px;
+      }
+    }
+
     @media (max-width: 600px) {
+      .drop-area {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      }
+
       .student {
         align-items: flex-start;
         flex-direction: column;
@@ -294,7 +338,8 @@
     <input id="nameInput" type="text" placeholder="Type a student name..." autocomplete="off" />
     <button id="addBtn">Add Name</button>
     <button id="sortBtn">Sort Names</button>
-    <button id="exportBtn" class="export-button">Export CSV</button>
+    <button id="exportExcelBtn" class="export-button">Export Excel</button>
+    <button id="exportCsvBtn" class="export-button">Export CSV</button>
     <button id="resetBtn" class="danger-button">Reset Day</button>
   </section>
 
@@ -328,7 +373,7 @@
   </main>
 
   <p class="note">
-    This page saves to the browser on this device. Use <strong>Export CSV</strong> to download today’s record. Use <strong>Reset Day</strong> to clear consequences and move everyone back to green.
+    This page saves to the browser on this device. Use <strong>Export Excel</strong> for coloured cells, or <strong>Export CSV</strong> for a plain text version. Use <strong>Reset Day</strong> to clear consequences and move everyone back to green.
   </p>
 
   <div id="toast" class="toast"></div>
@@ -344,13 +389,15 @@
     const nameInput = document.getElementById("nameInput");
     const addBtn = document.getElementById("addBtn");
     const sortBtn = document.getElementById("sortBtn");
-    const exportBtn = document.getElementById("exportBtn");
+    const exportExcelBtn = document.getElementById("exportExcelBtn");
+    const exportCsvBtn = document.getElementById("exportCsvBtn");
     const resetBtn = document.getElementById("resetBtn");
     const toast = document.getElementById("toast");
 
     addBtn.addEventListener("click", addStudent);
     sortBtn.addEventListener("click", sortStudents);
-    exportBtn.addEventListener("click", exportCsv);
+    exportExcelBtn.addEventListener("click", exportExcel);
+    exportCsvBtn.addEventListener("click", exportCsv);
     resetBtn.addEventListener("click", resetDay);
 
     nameInput.addEventListener("keydown", (event) => {
@@ -606,7 +653,7 @@
         ["Export Date", "Export Time", "Student Name", "Ended On", "Crosses", "Consequence"]
       ];
 
-      students.forEach(student => {
+      getSortedStudentsForExport().forEach(student => {
         rows.push([
           displayDate,
           displayTime,
@@ -618,18 +665,97 @@
       });
 
       const csvContent = rows.map(row => row.map(escapeCsv).join(",")).join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      downloadFile(csvContent, "traffic-light-export-" + fileDate + ".csv", "text/csv;charset=utf-8;");
+      showToast("CSV export downloaded.");
+    }
+
+    function exportExcel() {
+      if (students.length === 0) {
+        showToast("There are no students to export yet.");
+        return;
+      }
+
+      const now = new Date();
+      const displayDate = now.toLocaleDateString();
+      const displayTime = now.toLocaleTimeString();
+      const fileDate = formatDateForFile(now);
+
+      const rows = getSortedStudentsForExport().map(student => {
+        const zone = capitalise(student.zone);
+        const colourStyle = getExcelColourStyle(student.zone);
+        const crosses = student.zone === "red" ? String(student.crosses) : "0";
+        const consequence = student.zone === "red" ? getConsequenceText(student.crosses) : "";
+
+        return `
+          <tr>
+            <td>${escapeHtml(displayDate)}</td>
+            <td>${escapeHtml(displayTime)}</td>
+            <td>${escapeHtml(student.name)}</td>
+            <td style="${colourStyle}">${escapeHtml(zone)}</td>
+            <td style="text-align:center;">${escapeHtml(crosses)}</td>
+            <td>${escapeHtml(consequence)}</td>
+          </tr>
+        `;
+      }).join("");
+
+      const excelHtml = `
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              table { border-collapse: collapse; font-family: Arial, sans-serif; }
+              th, td { border: 1px solid #cccccc; padding: 6px 10px; }
+              th { background: #eeeeee; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <table>
+              <thead>
+                <tr>
+                  <th>Export Date</th>
+                  <th>Export Time</th>
+                  <th>Student Name</th>
+                  <th>Ended On</th>
+                  <th>Crosses</th>
+                  <th>Consequence</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </body>
+        </html>
+      `;
+
+      downloadFile(excelHtml, "traffic-light-export-" + fileDate + ".xls", "application/vnd.ms-excel;charset=utf-8;");
+      showToast("Excel export downloaded with colours.");
+    }
+
+    function getExcelColourStyle(zone) {
+      if (zone === "green") return "background:#00B050; color:#000000; font-weight:bold;";
+      if (zone === "yellow") return "background:#FFFF00; color:#000000; font-weight:bold;";
+      if (zone === "red") return "background:#FF0000; color:#FFFFFF; font-weight:bold;";
+      return "";
+    }
+
+    function getSortedStudentsForExport() {
+      const zoneOrder = { green: 1, yellow: 2, red: 3 };
+      return [...students].sort((a, b) => {
+        return zoneOrder[a.zone] - zoneOrder[b.zone] || a.name.localeCompare(b.name);
+      });
+    }
+
+    function downloadFile(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
       const url = URL.createObjectURL(blob);
 
       const link = document.createElement("a");
       link.href = url;
-      link.download = "traffic-light-export-" + fileDate + ".csv";
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
       URL.revokeObjectURL(url);
-      showToast("Export downloaded.");
     }
 
     function formatDateForFile(date) {
@@ -642,6 +768,15 @@
     function escapeCsv(value) {
       const stringValue = String(value ?? "");
       return '"' + stringValue.replaceAll('"', '""') + '"';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
     function capitalise(value) {
