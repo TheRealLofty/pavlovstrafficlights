@@ -387,6 +387,7 @@
     <button id="exportXlsxBtn" class="export-button">Export XLSX</button>
     <button id="exportCsvBtn" class="export-button">Export CSV</button>
     <button id="resetBtn" class="danger-button">Reset Day</button>
+    <button id="removeAllBtn" class="danger-button">Remove All Names</button>
   </section>
 
   <main class="traffic-board">
@@ -413,13 +414,13 @@
         <span class="light-circle red-circle" aria-hidden="true"></span>
         <span>Red</span>
       </h2>
-      <div class="hint">Locked on red — max: Buddy Class, then R &amp; R</div>
+      <div class="hint">Locked on red — steps: Class Timeout, Buddy Class, then R &amp; R</div>
       <div class="drop-area" data-zone="red" id="redList"></div>
     </section>
   </main>
 
   <p class="note">
-    This page saves to the browser on this device. Paste one name per line to add a whole class at once. Press <strong>Ctrl/Command + Enter</strong> to add from the box quickly. Drag with a mouse, touchscreen or interactive board. Name cards automatically tighten and text scales as the board gets busier. Use <strong>Export XLSX</strong> for a workbook with a coloured summary sheet and a time-stamped event log. Use <strong>Reset Day</strong> to clear consequences and move everyone back to green; the event log is kept for export.
+    This page saves to the browser on this device. Paste one name per line to add a whole class at once. Press <strong>Ctrl/Command + Enter</strong> to add from the box quickly. Drag with a mouse, touchscreen or interactive board. Name cards automatically tighten and text scales as the board gets busier. Use <strong>Export XLSX</strong> for a workbook with a coloured summary sheet and a time-stamped event log. Use <strong>Reset Day</strong> to clear consequences and move everyone back to green; the event log is kept for export. Use <strong>Remove All Names</strong> to clear the board completely while keeping the event log for export.
   </p>
 
   <div id="toast" class="toast"></div>
@@ -428,7 +429,7 @@
     const STORAGE_KEY = "classTrafficLightBoardV3";
     const OLD_STORAGE_KEYS = ["classTrafficLightBoardV2", "classTrafficLightBoardV1"];
     const LOG_STORAGE_KEY = "classTrafficLightEventLogV1";
-    const MAX_CROSSES = 2;
+    const MAX_CROSSES = 3;
 
     let students = loadStudents();
     let eventLog = loadEventLog();
@@ -440,6 +441,7 @@
     const exportXlsxBtn = document.getElementById("exportXlsxBtn");
     const exportCsvBtn = document.getElementById("exportCsvBtn");
     const resetBtn = document.getElementById("resetBtn");
+    const removeAllBtn = document.getElementById("removeAllBtn");
     const toast = document.getElementById("toast");
 
     addBtn.addEventListener("click", addStudent);
@@ -447,6 +449,7 @@
     exportXlsxBtn.addEventListener("click", exportXlsx);
     exportCsvBtn.addEventListener("click", exportCsv);
     resetBtn.addEventListener("click", resetDay);
+    removeAllBtn.addEventListener("click", removeAllStudents);
 
     nameInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
@@ -585,7 +588,7 @@
     }
 
     function resetDay() {
-      const confirmed = confirm("Reset the day? This will move everyone back to green and clear Buddy Class / R & R. The event log will stay for export.");
+      const confirmed = confirm("Reset the day? This will move everyone back to green and clear Class Timeout / Buddy Class / R & R. The event log will stay for export.");
       if (!confirmed) return;
 
       students = students.map(student => {
@@ -619,6 +622,36 @@
       saveStudents();
       render();
       showToast("Day reset. Event log kept for export.");
+    }
+
+    function removeAllStudents() {
+      if (students.length === 0) {
+        showToast("There are no student names to remove.");
+        return;
+      }
+
+      const confirmed = confirm("Remove all student names from the board? This will clear every name, but keep the event log for export.");
+      if (!confirmed) return;
+
+      const removedCount = students.length;
+
+      students.forEach(student => {
+        logEvent({
+          student,
+          action: "All Students Removed",
+          fromZone: student.zone,
+          toZone: "",
+          fromCrosses: student.crosses || 0,
+          toCrosses: 0,
+          consequence: student.zone === "red" ? getConsequenceText(student.crosses) : "",
+          note: "Removed during Remove All Names"
+        });
+      });
+
+      students = [];
+      saveStudents();
+      render();
+      showToast("Removed " + removedCount + " student name(s). Event log kept for export.");
     }
 
     function render() {
@@ -863,15 +896,17 @@
     }
 
     function getConsequenceText(crosses) {
-      if (crosses >= 2) return "R & R";
-      if (crosses === 1) return "Buddy Class";
+      if (crosses >= 3) return "R & R";
+      if (crosses === 2) return "Buddy Class";
+      if (crosses === 1) return "Class Timeout";
       return "On Red";
     }
 
     function getNextConsequenceButtonText(crosses) {
-      if (crosses >= 2) return "Max";
-      if (crosses === 1) return "R & R";
-      return "Buddy Class";
+      if (crosses >= 3) return "Max";
+      if (crosses === 2) return "R & R";
+      if (crosses === 1) return "Buddy Class";
+      return "Class Timeout";
     }
 
     function handleDragOver(event) {
